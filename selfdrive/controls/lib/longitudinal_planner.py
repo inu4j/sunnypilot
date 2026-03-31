@@ -151,7 +151,10 @@ class LongitudinalPlanner(LongitudinalPlannerSP):
     if force_slow_decel:
       v_cruise = 0.0
 
-    custom_smoothing = self.params.get_float('CustomAccelerationSmoothing') or 1.0
+    try:
+      custom_smoothing = self.params.get_float('CustomAccelerationSmoothing') or 1.0
+    except Exception:
+      custom_smoothing = 1.0
     self.mpc.set_weights(prev_accel_constraint, personality=sm['selfdriveState'].personality, custom_smoothing=custom_smoothing)
     self.mpc.set_cur_state(self.v_desired_filter.x, self.a_desired)
     self.mpc.update(sm['radarState'], v_cruise, x, v, a, j, personality=sm['selfdriveState'].personality)

@@ -3,6 +3,21 @@ from openpilot.system.ui.widgets import Widget
 from openpilot.system.ui.widgets.list_view import multiple_button_item, toggle_item, simple_item, slider_item
 from openpilot.system.ui.widgets.scroller import Scroller
 
+
+def _safe_get_float(params, key, default=0.0):
+  try:
+    val = params.get_float(key)
+    return val if val != 0.0 else default
+  except Exception:
+    return default
+
+
+def _safe_put_float(params, key, value):
+  try:
+    params.put_float(key, value)
+  except Exception:
+    pass
+
 # Description constants
 DESCRIPTIONS = {
   "OpenpilotEnabledToggle": (
@@ -108,7 +123,7 @@ class TogglesLayout(Widget):
         "Acceleration Smoothing",
         DESCRIPTIONS["CustomAccelerationSmoothing"],
         min_val=0.3, max_val=2.0,
-        current_val=self._params.get_float("CustomAccelerationSmoothing") or 1.0,
+        current_val=_safe_get_float(self._params, "CustomAccelerationSmoothing", 1.0),
         step=0.1,
         callback=self._set_acceleration_smoothing,
         icon="speed_limit.png"
@@ -117,7 +132,7 @@ class TogglesLayout(Widget):
         "Steering Strength",
         DESCRIPTIONS["CustomSteeringStrength"],
         min_val=0.5, max_val=2.0,
-        current_val=self._params.get_float("CustomSteeringStrength") or 1.0,
+        current_val=_safe_get_float(self._params, "CustomSteeringStrength", 1.0),
         step=0.1,
         callback=self._set_steering_strength,
         icon="steering.png"
@@ -126,7 +141,7 @@ class TogglesLayout(Widget):
         "Steering Friction",
         DESCRIPTIONS["CustomSteeringFriction"],
         min_val=-1.0, max_val=1.0,
-        current_val=self._params.get_float("CustomSteeringFriction") or 0.0,
+        current_val=_safe_get_float(self._params, "CustomSteeringFriction", 0.0),
         step=0.1,
         callback=self._set_steering_friction,
         icon="friction.png"
@@ -142,10 +157,10 @@ class TogglesLayout(Widget):
     self._params.put("LongitudinalPersonality", button_index)
 
   def _set_acceleration_smoothing(self, value: float):
-    self._params.put_float("CustomAccelerationSmoothing", value)
+    _safe_put_float(self._params, "CustomAccelerationSmoothing", value)
 
   def _set_steering_strength(self, value: float):
-    self._params.put_float("CustomSteeringStrength", value)
+    _safe_put_float(self._params, "CustomSteeringStrength", value)
 
   def _set_steering_friction(self, value: float):
-    self._params.put_float("CustomSteeringFriction", value)
+    _safe_put_float(self._params, "CustomSteeringFriction", value)

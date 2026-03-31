@@ -56,9 +56,15 @@ class LatControlTorque(LatControl):
   def update(self, active, CS, VM, params, steer_limited_by_safety, desired_curvature, calibrated_pose, curvature_limited):
     pid_log = log.ControlsState.LateralTorqueState.new_message()
 
-    # Apply custom steering parameters
-    steering_strength = self.params.get_float('CustomSteeringStrength') or 1.0
-    steering_friction = self.params.get_float('CustomSteeringFriction') or 0.0
+    # Apply custom steering parameters (SAM Edition)
+    try:
+      steering_strength = self.params.get_float('CustomSteeringStrength') or 1.0
+    except Exception:
+      steering_strength = 1.0
+    try:
+      steering_friction = self.params.get_float('CustomSteeringFriction') or 0.0
+    except Exception:
+      steering_friction = 0.0
     steering_strength = np.clip(steering_strength, 0.5, 2.0)
     steering_friction = np.clip(steering_friction, -1.0, 1.0)
 
