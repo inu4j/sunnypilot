@@ -212,7 +212,7 @@ class ListItem(Widget):
     self.action_item = action_item
 
     self.set_rect(rl.Rectangle(0, 0, ITEM_BASE_WIDTH, ITEM_BASE_HEIGHT))
-    self._font = gui_app.font(FontWeight.NORMAL)
+    self._font = None  # Lazy load on first render
 
     # Cached properties for performance
     self._prev_max_width: int = 0
@@ -248,6 +248,13 @@ class ListItem(Widget):
   def _render(self, _):
     if not self.is_visible:
       return
+
+    # Lazy load font on first render
+    if self._font is None:
+      try:
+        self._font = gui_app.font(FontWeight.NORMAL)
+      except:
+        return  # Skip render if font not available yet
 
     # Don't draw items that are not in parent's viewport
     if ((self._rect.y + self.rect.height) <= self._parent_rect.y or
@@ -376,10 +383,17 @@ class SliderAction(ItemAction):
     self.current_val = current_val
     self.step = step
     self.callback = callback
-    self._font = gui_app.font(FontWeight.NORMAL)
+    self._font = None  # Lazy load on first render
     self.is_dragging = False
 
   def _render(self, rect: rl.Rectangle) -> bool:
+    # Lazy load font on first render
+    if self._font is None:
+      try:
+        self._font = gui_app.font(FontWeight.NORMAL)
+      except:
+        return False  # Skip render if font not available yet
+
     # Slider dimensions
     slider_width = 500
     slider_height = 10
