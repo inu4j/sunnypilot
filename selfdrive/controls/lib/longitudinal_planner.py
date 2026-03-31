@@ -3,6 +3,7 @@ import math
 import numpy as np
 
 import cereal.messaging as messaging
+from openpilot.common.params import Params
 from opendbc.car.interfaces import ACCEL_MIN, ACCEL_MAX
 from openpilot.common.constants import CV
 from openpilot.common.filter_simple import FirstOrderFilter
@@ -53,6 +54,7 @@ def limit_accel_in_turns(v_ego, angle_steers, a_target, CP):
 class LongitudinalPlanner(LongitudinalPlannerSP):
   def __init__(self, CP, init_v=0.0, init_a=0.0, dt=DT_MDL):
     self.CP = CP
+    self.params = Params()
     self.mpc = LongitudinalMpc(dt=dt)
     # TODO remove mpc modes when TR released
     self.mpc.mode = 'acc'
@@ -149,7 +151,8 @@ class LongitudinalPlanner(LongitudinalPlannerSP):
     if force_slow_decel:
       v_cruise = 0.0
 
-    self.mpc.set_weights(prev_accel_constraint, personality=sm['selfdriveState'].personality)
+    custom_smoothing = self.params.get_float('CustomAccelerationSmoothing') or 1.0
+    self.mpc.set_weights(prev_accel_constraint, personality=sm['selfdriveState'].personality, custom_smoothing=custom_smoothing)
     self.mpc.set_cur_state(self.v_desired_filter.x, self.a_desired)
     self.mpc.update(sm['radarState'], v_cruise, x, v, a, j, personality=sm['selfdriveState'].personality)
 

@@ -2,7 +2,7 @@ from openpilot.common.params import Params
 from openpilot.system.ui.lib.application import gui_app
 from openpilot.system.ui.widgets import Widget, DialogResult
 from openpilot.system.ui.widgets.confirm_dialog import confirm_dialog
-from openpilot.system.ui.widgets.list_view import button_item, text_item
+from openpilot.system.ui.widgets.list_view import button_item, text_item, simple_item
 from openpilot.system.ui.widgets.scroller import Scroller
 
 
@@ -16,6 +16,7 @@ class SoftwareLayout(Widget):
 
   def _init_items(self):
     items = [
+      simple_item("✨ SAM Edition • Sunnypilot Advanced Modulation ✨"),
       text_item("Current Version", ""),
       button_item("Download", "CHECK", callback=self._on_download_update),
       button_item("Install Update", "INSTALL", callback=self._on_install_update),

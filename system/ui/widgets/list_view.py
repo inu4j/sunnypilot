@@ -366,3 +366,80 @@ def multiple_button_item(title: str, description: str, buttons: list[str], selec
                          button_width: int = BUTTON_WIDTH, callback: Callable = None, icon: str = ""):
   action = MultipleButtonAction(buttons, button_width, selected_index, callback=callback)
   return ListItem(title=title, description=description, icon=icon, action_item=action)
+
+
+class SliderAction(ItemAction):
+  def __init__(self, min_val: float, max_val: float, current_val: float, step: float, callback: Callable = None):
+    super().__init__(width=600, enabled=True)
+    self.min_val = min_val
+    self.max_val = max_val
+    self.current_val = current_val
+    self.step = step
+    self.callback = callback
+    self._font = gui_app.font(FontWeight.NORMAL)
+    self.is_dragging = False
+
+  def _render(self, rect: rl.Rectangle) -> bool:
+    # Slider dimensions
+    slider_width = 500
+    slider_height = 10
+    handle_radius = 20
+    slider_x = rect.x + 20
+    slider_y = rect.y + (rect.height - slider_height) / 2
+
+    # Draw slider background
+    rl.draw_rectangle(int(slider_x), int(slider_y), int(slider_width), int(slider_height), rl.Color(100, 100, 100, 255))
+
+    # Calculate handle position
+    normalized = (self.current_val - self.min_val) / (self.max_val - self.min_val)
+    handle_x = slider_x + normalized * slider_width
+    handle_y = slider_y + slider_height / 2
+
+    # Draw filled part
+    rl.draw_rectangle(int(slider_x), int(slider_y), int(normalized * slider_width), int(slider_height), rl.Color(51, 171, 76, 255))
+
+    # Draw handle
+    rl.draw_circle(int(handle_x), int(handle_y), handle_radius, rl.Color(51, 171, 76, 255))
+    rl.draw_circle_lines(int(handle_x), int(handle_y), handle_radius, rl.Color(100, 100, 100, 255))
+
+    # Draw value text
+    value_text = f"{self.current_val:.2f}"
+    text_size = measure_text_cached(self._font, value_text, 40)
+    text_x = slider_x + slider_width + 30
+    text_y = rect.y + (rect.height - text_size.y) / 2
+    rl.draw_text_ex(self._font, value_text, rl.Vector2(int(text_x), int(text_y)), 40, 0, rl.WHITE)
+
+    # Handle mouse interaction
+    mouse_pos = rl.get_mouse_position()
+    handle_rect = rl.Rectangle(handle_x - handle_radius, handle_y - handle_radius, handle_radius * 2, handle_radius * 2)
+
+    if rl.is_mouse_button_pressed(rl.MouseButton.MOUSE_BUTTON_LEFT) and rl.check_collision_point_rec(mouse_pos, handle_rect):
+      self.is_dragging = True
+
+    if rl.is_mouse_button_released(rl.MouseButton.MOUSE_BUTTON_LEFT):
+      self.is_dragging = False
+
+    # Update value while dragging
+    if self.is_dragging:
+      slider_rect = rl.Rectangle(slider_x, slider_y - handle_radius, slider_width, slider_height + handle_radius * 2)
+      if rl.check_collision_point_rec(mouse_pos, slider_rect):
+        relative_x = mouse_pos.x - slider_x
+        relative_x = max(0, min(relative_x, slider_width))
+        normalized = relative_x / slider_width
+        new_val = self.min_val + normalized * (self.max_val - self.min_val)
+        new_val = round(new_val / self.step) * self.step
+        new_val = max(self.min_val, min(new_val, self.max_val))
+        if abs(new_val - self.current_val) > 1e-6:
+          self.current_val = new_val
+          if self.callback:
+            self.callback(new_val)
+          return True
+
+    return False
+
+
+def slider_item(title: str, description: str | Callable[[], str] | None = None, min_val: float = 0.0,
+                max_val: float = 1.0, current_val: float = 0.5, step: float = 0.1,
+                callback: Callable = None, icon: str = "") -> ListItem:
+  action = SliderAction(min_val, max_val, current_val, step, callback=callback)
+  return ListItem(title=title, description=description, icon=icon, action_item=action)

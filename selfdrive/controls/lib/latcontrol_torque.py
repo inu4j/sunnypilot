@@ -4,6 +4,7 @@ import numpy as np
 from cereal import log
 from opendbc.car.lateral import FRICTION_THRESHOLD, get_friction
 from openpilot.common.constants import ACCELERATION_DUE_TO_GRAVITY
+from openpilot.common.params import Params
 from openpilot.selfdrive.controls.lib.latcontrol import LatControl
 from openpilot.common.pid import PIDController
 
@@ -27,6 +28,7 @@ LOW_SPEED_Y = [15, 13, 10, 5]
 class LatControlTorque(LatControl):
   def __init__(self, CP, CP_SP, CI):
     super().__init__(CP, CP_SP, CI)
+    self.params = Params()
     self.torque_params = CP.lateralTuning.torque.as_builder()
     self.torque_from_lateral_accel = CI.torque_from_lateral_accel()
     self.lateral_accel_from_torque = CI.lateral_accel_from_torque()
@@ -34,6 +36,10 @@ class LatControlTorque(LatControl):
                              k_f=self.torque_params.kf)
     self.update_limits()
     self.steering_angle_deadzone_deg = self.torque_params.steeringAngleDeadzoneDeg
+
+    # Store base torque parameters for custom scaling
+    self.base_lat_accel_factor = self.torque_params.latAccelFactor
+    self.base_friction = self.torque_params.friction
 
     self.extension = LatControlTorqueExt(self, CP, CP_SP, CI)
 
@@ -49,6 +55,17 @@ class LatControlTorque(LatControl):
 
   def update(self, active, CS, VM, params, steer_limited_by_safety, desired_curvature, calibrated_pose, curvature_limited):
     pid_log = log.ControlsState.LateralTorqueState.new_message()
+
+    # Apply custom steering parameters
+    steering_strength = self.params.get_float('CustomSteeringStrength') or 1.0
+    steering_friction = self.params.get_float('CustomSteeringFriction') or 0.0
+    steering_strength = np.clip(steering_strength, 0.5, 2.0)
+    steering_friction = np.clip(steering_friction, -1.0, 1.0)
+
+    adjusted_lat_accel_factor = self.base_lat_accel_factor * steering_strength
+    adjusted_friction = self.base_friction + steering_friction
+    self.update_live_torque_params(adjusted_lat_accel_factor, self.torque_params.latAccelOffset, adjusted_friction)
+
     if not active:
       output_torque = 0.0
       pid_log.active = False

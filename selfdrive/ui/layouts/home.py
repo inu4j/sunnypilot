@@ -211,4 +211,6 @@ class HomeLayout(Widget):
   def _get_version_text(self) -> str:
     brand = "openpilot"
     description = self.params.get("UpdaterCurrentDescription")
-    return f"{brand} {description}" if description else brand
+    version_str = f"{brand} {description}" if description else brand
+    # Add SAM Edition badge
+    return f"✨ {version_str} | SAM Edition ✨"

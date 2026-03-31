@@ -58,15 +58,23 @@ STOP_DISTANCE = 6.0
 CRUISE_MIN_ACCEL = -1.2
 CRUISE_MAX_ACCEL = 1.6
 
-def get_jerk_factor(personality=log.LongitudinalPersonality.standard):
-  if personality==log.LongitudinalPersonality.relaxed:
-    return 1.0
-  elif personality==log.LongitudinalPersonality.standard:
-    return 1.0
-  elif personality==log.LongitudinalPersonality.aggressive:
-    return 0.5
+def get_jerk_factor(personality=log.LongitudinalPersonality.standard, custom_smoothing=None):
+  if custom_smoothing is None:
+    custom_smoothing = 1.0
+
+  # Base jerk factor by personality
+  if personality == log.LongitudinalPersonality.relaxed:
+    base_jerk = 1.0
+  elif personality == log.LongitudinalPersonality.standard:
+    base_jerk = 1.0
+  elif personality == log.LongitudinalPersonality.aggressive:
+    base_jerk = 0.5
   else:
     raise NotImplementedError("Longitudinal personality not supported")
+
+  # Apply custom smoothing multiplier
+  custom_smoothing = np.clip(custom_smoothing, 0.3, 2.0)
+  return base_jerk * custom_smoothing
 
 
 def get_T_FOLLOW(personality=log.LongitudinalPersonality.standard):
@@ -274,8 +282,8 @@ class LongitudinalMpc:
     for i in range(N):
       self.solver.cost_set(i, 'Zl', Zl)
 
-  def set_weights(self, prev_accel_constraint=True, personality=log.LongitudinalPersonality.standard):
-    jerk_factor = get_jerk_factor(personality)
+  def set_weights(self, prev_accel_constraint=True, personality=log.LongitudinalPersonality.standard, custom_smoothing=None):
+    jerk_factor = get_jerk_factor(personality, custom_smoothing)
     if self.mode == 'acc':
       a_change_cost = A_CHANGE_COST if prev_accel_constraint else 0
       cost_weights = [X_EGO_OBSTACLE_COST, X_EGO_COST, V_EGO_COST, A_EGO_COST, jerk_factor * a_change_cost, jerk_factor * J_EGO_COST]

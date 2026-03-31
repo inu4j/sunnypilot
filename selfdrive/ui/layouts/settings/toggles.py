@@ -1,6 +1,6 @@
 from openpilot.common.params import Params
 from openpilot.system.ui.widgets import Widget
-from openpilot.system.ui.widgets.list_view import multiple_button_item, toggle_item
+from openpilot.system.ui.widgets.list_view import multiple_button_item, toggle_item, simple_item, slider_item
 from openpilot.system.ui.widgets.scroller import Scroller
 
 # Description constants
@@ -23,6 +23,25 @@ DESCRIPTIONS = {
   'RecordFront': "Upload data from the driver facing camera and help improve the driver monitoring algorithm.",
   "IsMetric": "Display speed in km/h instead of mph.",
   "RecordAudio": "Record and store microphone audio while driving. The audio will be included in the dashcam video in comma connect.",
+  "SAMSection": (
+    "Sunnypilot Advanced Modulation - Fine-tune acceleration and steering behavior for your driving preference."
+  ),
+  "CustomAccelerationSmoothing": (
+    "[0.3 = Very Smooth | 1.0 = Standard | 2.0 = Very Fast]\n\n" +
+    "↓값 = 중단후 부드럽고 천천히 가속 | ↑값 = 빠르게 가속\n" +
+    "슬라이더를 드래그해서 0.3~2.0 범위에서 자유롭게 조정하세요."
+  ),
+  "CustomSteeringStrength": (
+    "[0.5 = 약한조향 | 1.0 = 표준 | 2.0 = 강한조향]\n\n" +
+    "↓값 = 가벼운 조향감, 넓은 각도 필요 | ↑값 = 강한 조향감, 날카로운 턴\n" +
+    "슬라이더를 드래그해서 0.5~2.0 범위에서 자유롭게 조정하세요."
+  ),
+  "CustomSteeringFriction": (
+    "[−1.0 = 낮은마찰 | 0.0 = 기본값 | +1.0 = 높은마찰]\n\n" +
+    "조향 시작에 필요한 초기 저항력 조정 (타이어 마찰, 조종 안정성)\n" +
+    "↓값 = 조향 쉬움 | ↑값 = 의도하지않은 조향방지\n" +
+    "슬라이더를 드래그해서 −1.0~+1.0 범위에서 자유롭게 조정하세요."
+  ),
 }
 
 
@@ -84,6 +103,34 @@ class TogglesLayout(Widget):
       toggle_item(
         "Use Metric System", DESCRIPTIONS["IsMetric"], self._params.get_bool("IsMetric"), icon="metric.png"
       ),
+      simple_item("━━━ SAM Section (Sunnypilot Advanced Modulation) ━━━"),
+      slider_item(
+        "Acceleration Smoothing",
+        DESCRIPTIONS["CustomAccelerationSmoothing"],
+        min_val=0.3, max_val=2.0,
+        current_val=self._params.get_float("CustomAccelerationSmoothing") or 1.0,
+        step=0.1,
+        callback=self._set_acceleration_smoothing,
+        icon="speed_limit.png"
+      ),
+      slider_item(
+        "Steering Strength",
+        DESCRIPTIONS["CustomSteeringStrength"],
+        min_val=0.5, max_val=2.0,
+        current_val=self._params.get_float("CustomSteeringStrength") or 1.0,
+        step=0.1,
+        callback=self._set_steering_strength,
+        icon="steering.png"
+      ),
+      slider_item(
+        "Steering Friction",
+        DESCRIPTIONS["CustomSteeringFriction"],
+        min_val=-1.0, max_val=1.0,
+        current_val=self._params.get_float("CustomSteeringFriction") or 0.0,
+        step=0.1,
+        callback=self._set_steering_friction,
+        icon="friction.png"
+      ),
     ]
 
     self._scroller = Scroller(items, line_separator=True, spacing=0)
@@ -93,3 +140,12 @@ class TogglesLayout(Widget):
 
   def _set_longitudinal_personality(self, button_index: int):
     self._params.put("LongitudinalPersonality", button_index)
+
+  def _set_acceleration_smoothing(self, value: float):
+    self._params.put_float("CustomAccelerationSmoothing", value)
+
+  def _set_steering_strength(self, value: float):
+    self._params.put_float("CustomSteeringStrength", value)
+
+  def _set_steering_friction(self, value: float):
+    self._params.put_float("CustomSteeringFriction", value)
